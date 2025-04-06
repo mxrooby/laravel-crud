@@ -1,26 +1,35 @@
-# Use the official PHP image from Docker Hub
-FROM php:8.0-fpm
+# Use an official PHP image with Apache
+FROM php:8.1-apache
 
-# Install necessary extensions for Laravel
-RUN apt-get update && apt-get install -y libpng-dev libjpeg-dev libfreetype6-dev zip git \
+# Install system dependencies for Laravel
+RUN apt-get update && apt-get install -y \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    zip \
+    git \
+    curl \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd pdo pdo_mysql
 
-# Install Composer (for managing PHP dependencies)
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+# Enable Apache Rewrite Module
+RUN a2enmod rewrite
 
-# Set the working directory inside the container
-WORKDIR /var/www
+# Set working directory
+WORKDIR /var/www/html
 
-# Copy the Laravel project files into the container
+# Copy the current directory contents into the container
 COPY . .
 
-# Install Laravel's PHP dependencies
+# Install Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# Install Laravel dependencies
 RUN composer install --no-interaction --prefer-dist
 
-# Expose the port that PHP-FPM will use
-EXPOSE 9000
+# Expose port 80 for the container
+EXPOSE 80
 
-# Start PHP-FPM
-CMD ["php-fpm"]
+# Start Apache server
+CMD ["apache2-foreground"]
 
